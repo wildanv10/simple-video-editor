@@ -55,7 +55,7 @@ function renderPlayhead() {
   $('playhead').style.left = `${duration ? (t / duration) * 100 : 0}%`;
   $('current').textContent = `${fmt(t)} / ${fmt(duration)}`;
   $('play').classList.toggle('is-playing', !video.paused);
-  $('playLabel').textContent = video.paused ? 'Putar' : 'Jeda';
+  $('playLabel').textContent = video.paused ? 'Play' : 'Pause';
 }
 
 function tick() {
@@ -68,7 +68,7 @@ requestAnimationFrame(tick);
 
 let loading = false;
 
-// Buka file dari path: main memastikan formatnya bisa diputar (remux ke MP4 sementara bila perlu).
+// Open a file by path: main makes sure it is playable (remuxed to a temporary MP4 if needed).
 async function openPath(filePath) {
   if (!filePath || loading || busy) return;
   loading = true;
@@ -83,7 +83,7 @@ async function openPath(filePath) {
   $('open').disabled = true;
   $('controls').classList.add('disabled');
   $('stage').classList.remove('loaded');
-  setStatus('Menyiapkan video…');
+  setStatus('Preparing video…');
 
   const info = await window.api.prepare(filePath);
   loading = false;
@@ -94,7 +94,7 @@ async function openPath(filePath) {
   }
   file = info;
   $('filename').textContent = info.name;
-  setStatus('Memuat video…');
+  setStatus('Loading video…');
   video.src = info.url;
 }
 
@@ -105,14 +105,14 @@ video.addEventListener('loadedmetadata', () => {
   $('stage').classList.add('loaded');
   $('controls').classList.remove('disabled');
   setStatus(file.converted
-    ? 'Format file diubah ke MP4 agar bisa diputar. Hasil simpan berformat MP4 normal.'
-    : 'Geser pegangan di slider untuk menentukan bagian yang disimpan.');
+    ? 'The file was converted to MP4 so it can be played. The saved clip will be a regular MP4.'
+    : 'Drag the slider handles to choose the part to keep.');
   renderRange();
 });
 
 video.addEventListener('error', () => {
   $('controls').classList.add('disabled');
-  setStatus('Video tidak bisa dimuat (format/codec tidak didukung pemutar).', 'error');
+  setStatus('The video could not be loaded (format or codec not supported by the player).', 'error');
 });
 
 $('open').addEventListener('click', async () => openPath(await window.api.pickFile()));
@@ -177,8 +177,8 @@ function setEnd(t) {
   renderRange();
 }
 
-// Set lewat tombol/keyboard/ketik: jika melewati titik lawannya,
-// titik lawan dikembalikan ke ujung video (awal = 0, akhir = durasi).
+// Set via button/keyboard/typing: if it crosses the opposite point, that point
+// is reset to the end of the video (start = 0, end = duration).
 function markStart(t) {
   if (t >= end - MIN_LENGTH) {
     start = clamp(t, 0, duration - MIN_LENGTH);
@@ -255,7 +255,7 @@ function setBusy(on) {
 window.api.onProgress((seconds) => {
   const pct = clamp((seconds / (end - start)) * 100, 0, 100);
   $('fill').style.width = `${pct}%`;
-  setStatus(`Memproses… ${Math.round(pct)}%`);
+  setStatus(`Processing… ${Math.round(pct)}%`);
 });
 
 $('export').addEventListener('click', async () => {
@@ -263,7 +263,7 @@ $('export').addEventListener('click', async () => {
   video.pause();
   $('reveal').hidden = true;
   setBusy(true);
-  setStatus('Memilih lokasi simpan…');
+  setStatus('Choosing where to save…');
 
   const result = await window.api.trim({ input: file.path, start, end });
 
@@ -271,9 +271,9 @@ $('export').addEventListener('click', async () => {
   if (result.ok) {
     outputPath = result.output;
     $('reveal').hidden = false;
-    setStatus(`Selesai: ${result.output}`, 'ok');
+    setStatus(`Done: ${result.output}`, 'ok');
   } else if (result.canceled) {
-    setStatus('Dibatalkan.');
+    setStatus('Canceled.');
   } else {
     setStatus(result.error, 'error');
   }

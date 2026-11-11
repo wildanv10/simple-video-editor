@@ -29,7 +29,7 @@ function createWindow() {
   win.loadFile('index.html');
 }
 
-// Jalankan ffmpeg sampai selesai; kembalikan kode keluar dan stderr-nya.
+// Run ffmpeg to completion; resolve with its exit code and stderr.
 function runFfmpeg(args) {
   return new Promise((resolve) => {
     const proc = spawn(ffmpegPath, args, { windowsHide: true });
@@ -40,12 +40,12 @@ function runFfmpeg(args) {
   });
 }
 
-// Kontainer asli yang bisa diputar Chromium. Selain ini (mis. MPEG-TS hasil
-// download HLS yang diberi ekstensi .mp4) di-remux dulu ke MP4 sementara.
+// Containers Chromium can play natively. Anything else (e.g. MPEG-TS from an
+// HLS download renamed to .mp4) is remuxed to a temporary MP4 first.
 const NATIVE_FORMATS = /mp4|matroska|webm|ogg/;
 
-let tempFile = null; // file MP4 sementara untuk preview
-const originals = new Map(); // file kerja -> file asli yang dipilih user
+let tempFile = null; // temporary MP4 used for preview
+const originals = new Map(); // working file -> original file picked by the user
 
 function removeTemp() {
   if (tempFile) {
@@ -59,7 +59,7 @@ async function prepare(file) {
   removeTemp();
   const probe = await runFfmpeg(['-hide_banner', '-i', file]);
   const format = /Input #0, (.+?), from/.exec(probe.stderr)?.[1] || '';
-  if (!format) return { error: 'File ini bukan video yang dikenali.' };
+  if (!format) return { error: 'This file is not a recognized video.' };
 
   let working = file;
   const converted = !NATIVE_FORMATS.test(format);
@@ -72,7 +72,7 @@ async function prepare(file) {
     ]);
     if (remux.code !== 0) {
       fs.unlink(tmp, () => {});
-      return { error: `Gagal menyiapkan video:\n${remux.stderr.trim().split('\n').slice(-3).join('\n')}` };
+      return { error: `Failed to prepare the video:\n${remux.stderr.trim().split('\n').slice(-3).join('\n')}` };
     }
     tempFile = tmp;
     working = tmp;
@@ -83,11 +83,11 @@ async function prepare(file) {
 
 ipcMain.handle('pick-file', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-    title: 'Pilih video',
+    title: 'Select a video',
     properties: ['openFile'],
     filters: [
       { name: 'Video', extensions: VIDEO_EXTS },
-      { name: 'Semua file', extensions: ['*'] },
+      { name: 'All files', extensions: ['*'] },
     ],
   });
   return canceled ? null : filePaths[0];
@@ -105,24 +105,24 @@ ipcMain.handle('cancel', () => {
 });
 
 ipcMain.handle('trim', async (e, { input, start, end }) => {
-  if (job) return { error: 'Masih ada proses yang berjalan.' };
-  if (!(end > start) || start < 0) return { error: 'Rentang waktu tidak valid.' };
+  if (job) return { error: 'Another operation is still running.' };
+  if (!(end > start) || start < 0) return { error: 'Invalid time range.' };
 
-  // Nama dan folder default mengikuti file asli; ekstensi mengikuti file kerja
-  // (.mp4 jika file asli perlu dikonversi).
+  // Default name and folder follow the original file; the extension follows the
+  // working file (.mp4 if the original had to be converted).
   const original = originals.get(input) || input;
   const ext = path.extname(input);
   const base = path.basename(original, path.extname(original));
 
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
-    title: 'Simpan hasil potongan',
+    title: 'Save trimmed video',
     defaultPath: path.join(path.dirname(original), `${base}_trim${ext}`),
     filters: [{ name: 'Video', extensions: [ext.slice(1)] }],
   });
   if (canceled || !filePath) return { canceled: true };
   const same = (a, b) => path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
   if (same(filePath, input) || same(filePath, original)) {
-    return { error: 'File hasil tidak boleh sama dengan file asli.' };
+    return { error: 'The output file must not be the same as the original file.' };
   }
 
   const args = [
@@ -146,7 +146,7 @@ ipcMain.handle('trim', async (e, { input, start, end }) => {
     });
     proc.on('error', (err) => {
       job = null;
-      resolve({ error: `Gagal menjalankan ffmpeg: ${err.message}` });
+      resolve({ error: `Failed to run ffmpeg: ${err.message}` });
     });
     proc.on('close', (code) => {
       const cancelled = job && job.cancelled;
@@ -157,7 +157,7 @@ ipcMain.handle('trim', async (e, { input, start, end }) => {
       } else if (code === 0) {
         resolve({ ok: true, output: filePath });
       } else {
-        resolve({ error: errTail.trim().split('\n').slice(-4).join('\n') || `ffmpeg berhenti dengan kode ${code}` });
+        resolve({ error: errTail.trim().split('\n').slice(-4).join('\n') || `ffmpeg exited with code ${code}` });
       }
     });
   });
