@@ -50,6 +50,7 @@ function runFfmpeg(args) {
   });
 }
 
+
 function tail(text, lines) {
   return text.trim().split('\n').slice(-lines).join('\n');
 }
@@ -140,10 +141,9 @@ ipcMain.handle('cancel', () => {
   }
 });
 
-ipcMain.handle('export', async (e, { clips, mode }) => {
+ipcMain.handle('export', async (e, { clips }) => {
   if (job) return { error: 'Another export is still running.' };
   if (!Array.isArray(clips) || clips.length === 0) return { error: 'The timeline is empty.' };
-  if (!['auto', '1080', '720'].includes(mode)) mode = 'auto';
 
   let resolved;
   try {
@@ -157,7 +157,8 @@ ipcMain.handle('export', async (e, { clips, mode }) => {
   // The first clip on the lowest line names the file (and sets the canvas size).
   const lead = [...resolved].sort((a, b) => a.layer - b.layer || a.start - b.start)[0];
   const firstMedia = library.get(lead.mediaId);
-  const ext = planExport(resolved, mode) === 'copy' ? path.extname(firstMedia.path) : '.mp4';
+  const plan = planExport(resolved); // { method: 'copy' | 'reencode', why }
+  const ext = plan.method === 'copy' ? path.extname(firstMedia.path) : '.mp4';
   const base = path.basename(firstMedia.original, path.extname(firstMedia.original));
 
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
@@ -175,23 +176,24 @@ ipcMain.handle('export', async (e, { clips, mode }) => {
   const tmpDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'video-trimmer-export-'));
   const ctl = { cancelled: false, proc: null };
   job = ctl;
+  const send = (fraction, info) => {
+    if (!e.sender.isDestroyed()) e.sender.send('export-progress', Math.min(1, Math.max(0, fraction)), info);
+  };
   try {
+    send(0, plan); // tells the UI right away whether this will be lossless or a re-encode
     const result = await exportProject({
       ffmpegPath,
       clips: resolved,
-      mode,
       outputPath: filePath,
       tmpDir,
       ctl,
-      onProgress: (fraction) => {
-        if (!e.sender.isDestroyed()) e.sender.send('export-progress', Math.min(1, Math.max(0, fraction)));
-      },
+      onProgress: send,
     });
     if (ctl.cancelled) {
       fs.rm(filePath, { force: true }, () => {});
       return { canceled: true };
     }
-    if (result.code === 0) return { ok: true, output: filePath, method: result.method };
+    if (result.code === 0) return { ok: true, output: filePath, method: result.method, why: result.why };
     fs.rm(filePath, { force: true }, () => {});
     return { error: tail(result.stderr, 4) || `ffmpeg exited with code ${result.code}` };
   } finally {

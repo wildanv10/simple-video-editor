@@ -9,5 +9,5 @@ contextBridge.exposeInMainWorld('api', {
   exportVideo: (opts) => ipcRenderer.invoke('export', opts),
   cancel: () => ipcRenderer.invoke('cancel'),
   reveal: (file) => ipcRenderer.invoke('reveal', file),
-  onProgress: (cb) => ipcRenderer.on('export-progress', (_e, fraction) => cb(fraction)),
+  onProgress: (cb) => ipcRenderer.on('export-progress', (_e, fraction, info) => cb(fraction, info)),
 });
