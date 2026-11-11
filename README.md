@@ -30,6 +30,16 @@ How the web version differs from the desktop app:
 - **Saving:** Chrome and Edge ask where to save; other browsers download the file to the usual Downloads folder. "Show in folder" exists only on the desktop.
 - **Files:** pick files with **Import media** or drag them into the page. Cancelling an export restarts the engine, which takes a moment.
 
+### On a phone or tablet
+
+Below 860 px wide the editor becomes a single column that fills the screen: the editor takes all the room that is left (preview, playback controls, the timeline), and **My media** is a strip of thumbnails pinned to the bottom. Under the playback controls, the time sits on the left and the split, delete and settings buttons on the right. Touch works like this:
+
+- Tap **+** on a thumbnail to add it on a new line (there is no hover on touch, so the buttons are always visible). Dragging a thumbnail also works where the browser supports it.
+- Drag a clip to move it, drag its edges to trim it, and drag the ruler to move the playhead. Dragging an empty part of the timeline pans it; the zoom buttons zoom it.
+- Tap the sliders button next to split and delete to open the clip settings (trim, fade, speed, volume) as a sheet at the bottom; the close button hides it again.
+
+Phones have far less memory than a computer, so keep to short clips there.
+
 ## Build the installer (Windows)
 
 ```
