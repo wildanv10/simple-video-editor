@@ -12,7 +12,11 @@ const state = {
   playhead: 0, // timeline seconds
   pps: 40, // timeline zoom, pixels per second
   busy: false, // exporting: edits are locked
+  propsOpen: false, // small screens: the clip settings sheet is open
 };
+
+// On small screens the layout is a single column and the clip settings are a bottom sheet.
+const compact = window.matchMedia('(max-width: 860px)');
 let nextClipId = 1;
 let nextTrackId = 1;
 let importing = false;
@@ -566,6 +570,7 @@ function updateButtons() {
   $('redo').disabled = state.busy || !history.redo.length;
   $('split').disabled = !splittable;
   $('delete').disabled = !selectedClip();
+  $('props-toggle').disabled = !selectedClip();
   $('export').disabled = !has;
   for (const id of ['play', 'to-start', 'back10', 'fwd10', 'zoom-fit']) $(id).disabled = !has;
 }
@@ -899,7 +904,10 @@ window.addEventListener('drop', (e) => {
 
 function renderProps() {
   const clip = selectedClip();
-  $('props-panel').hidden = !clip;
+  if (!clip) state.propsOpen = false;
+  // Desktop: shown whenever a clip is selected. Small screens: only when opened on purpose,
+  // so selecting a clip does not cover the timeline.
+  $('props-panel').hidden = !clip || (compact.matches && !state.propsOpen);
   if (!clip) return;
   const media = state.media.get(clip.mediaId);
   const len = (clip.out - clip.in) / clip.speed;
@@ -991,10 +999,25 @@ for (const [id, edge] of [['start-input', 'start'], ['end-input', 'end']]) {
 }
 
 $('props-close').addEventListener('click', () => {
-  state.selectedId = null;
-  updateSelection();
+  if (compact.matches) {
+    state.propsOpen = false; // just close the sheet; the clip stays selected
+  } else {
+    state.selectedId = null;
+    updateSelection();
+  }
   renderProps();
   updateButtons();
+});
+
+$('props-toggle').addEventListener('click', () => {
+  state.propsOpen = !state.propsOpen;
+  renderProps();
+});
+
+compact.addEventListener('change', () => {
+  renderProps();
+  renderTimeline();
+  fitCanvas();
 });
 
 /* ---------- Export ---------- */
@@ -1131,10 +1154,11 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-window.addEventListener('resize', () => {
-  renderTimeline();
-  fitCanvas();
-});
+window.addEventListener('resize', renderTimeline);
+
+// The preview area's size follows the layout (e.g. the media strip growing), not just the
+// window, so the canvas is refitted whenever the stage itself changes size.
+new ResizeObserver(fitCanvas).observe($('stage'));
 
 /* ---------- Start ---------- */
 

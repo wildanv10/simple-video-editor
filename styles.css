@@ -1,23 +1,29 @@
-/* Clipchamp-like editor layout with shadcn/ui-style components (light theme, violet accent). */
+﻿/* Clipchamp-like editor layout in a warm light theme.
+   Palette: white #FFFFFF, cream #F7F1E6, peach #FFD8A8, orange #FF9F1C, navy #2B2D42.
+   The greys, borders and hover are tints of those five, so nothing else is introduced. */
 :root {
-  --bg: #f1f1f7;
-  --surface: #ffffff;
-  --surface-2: #f6f6fa;
-  --foreground: #18181b;
-  --muted-foreground: #71717a;
-  --border: #e4e4ea;
-  --input: #d4d4dc;
-  --primary: #7c3aed;
-  --primary-hover: #6d28d9;
-  --primary-foreground: #ffffff;
-  --primary-soft: #ede9fe;
-  --ring: #a78bfa;
+  --bg: #f7f1e6; /* cream: the page behind the panels, empty lanes, thumbnails */
+  --surface: #ffffff; /* white: panels */
+  --surface-2: #f7f1e6;
+  --hover: rgba(43, 45, 66, 0.06); /* navy, very light */
+  --foreground: #2b2d42; /* navy: text, playhead, toasts */
+  --muted-foreground: #6b6c7b; /* navy at 70% on white */
+  --subtle-foreground: #9596a0; /* navy at 50% on white */
+  --border: #ebe2d0; /* cream, a step darker */
+  --input: #d9ccb4; /* cream, two steps darker */
+  --primary: #ff9f1c; /* orange */
+  --primary-hover: #eb8a0a;
+  --primary-foreground: #2b2d42; /* navy: white on this orange would be hard to read */
+  --primary-soft: #ffd8a8; /* peach */
+  --primary-border: #ffd8a8;
+  --ring: #2b2d42; /* focus outline */
   --destructive: #dc2626;
-  --success: #16a34a;
-  --radius: 0.5rem;
+  --success: #389e0d;
+  --radius: 8px;
+  --shadow-overlay: 0 6px 16px 0 rgba(43, 45, 66, 0.12), 0 3px 6px -4px rgba(43, 45, 66, 0.18), 0 9px 28px 8px rgba(43, 45, 66, 0.08);
 
-  --font-sans: "Segoe UI Variable Text", "Segoe UI", "Inter", system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+  --font-sans: "Figtree Variable", "Figtree", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "Cascadia Mono", Consolas, ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -62,7 +68,7 @@ button { font: inherit; color: inherit; }
   height: 36px;
   padding: 0 16px;
   border: 1px solid transparent;
-  border-radius: calc(var(--radius) - 2px);
+  border-radius: var(--radius);
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
@@ -72,7 +78,7 @@ button { font: inherit; color: inherit; }
 .btn-primary { background: var(--primary); color: var(--primary-foreground); }
 .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
 .btn-outline { background: var(--surface); border-color: var(--input); }
-.btn-outline:hover:not(:disabled) { background: var(--surface-2); }
+.btn-outline:hover:not(:disabled) { background: var(--hover); }
 .btn-sm { height: 30px; padding: 0 12px; font-size: 13px; }
 .btn-block { width: 100%; }
 
@@ -86,12 +92,12 @@ button { font: inherit; color: inherit; }
   padding: 0 6px;
   background: transparent;
   border: 0;
-  border-radius: calc(var(--radius) - 2px);
+  border-radius: var(--radius);
   color: var(--foreground);
   cursor: pointer;
   transition: background-color 0.15s;
 }
-.icon-btn:hover:not(:disabled) { background: var(--bg); }
+.icon-btn:hover:not(:disabled) { background: var(--hover); }
 .icon-btn-text { font-size: 12px; font-weight: 600; padding: 0 8px; }
 
 .play-btn {
@@ -101,13 +107,14 @@ button { font: inherit; color: inherit; }
   width: 40px;
   height: 40px;
   margin: 0 4px;
-  background: var(--bg);
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: 0;
   border-radius: 50%;
   cursor: pointer;
   transition: background-color 0.15s;
 }
-.play-btn:hover:not(:disabled) { background: #e4e4ee; }
+.play-btn:hover:not(:disabled) { background: var(--primary-hover); }
 .play-btn .icon { width: 20px; height: 20px; fill: currentColor; }
 #play .i-pause { display: none; }
 #play.is-playing .i-play { display: none; }
@@ -159,7 +166,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
 .media-thumb {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: #e9e9f1 center / cover no-repeat;
+  background: var(--bg) center / cover no-repeat;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -181,7 +188,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(24, 24, 27, 0.4);
+  background: rgba(43, 45, 66, 0.45);
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -197,7 +204,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   border-radius: 50%;
   cursor: pointer;
 }
-.media-actions button:hover { background: var(--primary-soft); color: var(--primary); }
+.media-actions button:hover { background: var(--primary); color: var(--primary-foreground); }
 .media-name {
   margin-top: 6px;
   font-size: 12px;
@@ -224,13 +231,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
 
 #preview-area {
   position: relative;
+  display: flex;
   flex: 1;
   min-height: 0;
   padding: 4px 16px 12px;
 }
+/* The stage fills the preview area by flexing, not by a percentage height, which would
+   not resolve when the area's own height comes from the layout. */
 #stage {
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,6 +299,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
 #transport .tools { display: flex; gap: 2px; }
 #transport .tools-end { justify-content: flex-end; }
 .playback { display: flex; align-items: center; gap: 2px; }
+.controls { display: flex; align-items: center; gap: 2px; }
 #time { margin-left: 12px; font: 13px var(--font-mono); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 #time b { color: var(--foreground); font-weight: 600; }
 
@@ -302,8 +314,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
 #tl-content { position: relative; min-height: 100%; min-width: 100%; }
 
 #ruler { position: relative; height: 34px; cursor: pointer; }
-.tick { position: absolute; bottom: 4px; width: 1px; height: 5px; background: #c8c8d2; pointer-events: none; }
-.tick.major { height: 9px; background: #8e8e9a; }
+.tick { position: absolute; bottom: 4px; width: 1px; height: 5px; background: var(--input); pointer-events: none; }
+.tick.major { height: 9px; background: var(--subtle-foreground); }
 .tick-label {
   position: absolute;
   top: 8px;
@@ -339,7 +351,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   left: 14px;
 }
 .new-lane-bottom::before { content: "Drop here for a new line at the bottom"; }
-.new-lane.drop-target { border-color: var(--primary); color: var(--primary); }
+.new-lane.drop-target { border-color: var(--primary); background: var(--primary-soft); color: var(--foreground); }
 
 /* Marks where a new line opens when a drop lands between two lines. */
 #drop-line {
@@ -357,7 +369,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   position: absolute;
   z-index: 15;
   height: 52px;
-  background: rgba(124, 58, 237, 0.12);
+  background: rgba(255, 159, 28, 0.2);
   border: 2px dashed var(--primary);
   border-radius: 7px;
   pointer-events: none;
@@ -368,7 +380,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   top: 4px;
   height: 52px;
   min-width: 4px;
-  background: #cfc8f1 left center / auto 100% repeat-x;
+  background: var(--primary-soft) left center / auto 100% repeat-x;
   border: 2px solid transparent;
   border-radius: 7px;
   overflow: hidden;
@@ -381,8 +393,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   background: linear-gradient(rgba(0, 0, 0, 0.5), transparent 55%);
   pointer-events: none;
 }
-.clip.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25); }
-.clip.dragging { z-index: 20; opacity: 0.85; cursor: grabbing; box-shadow: 0 8px 24px rgba(24, 24, 27, 0.3); }
+.clip.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255, 159, 28, 0.4); }
+.clip.dragging { z-index: 20; opacity: 0.85; cursor: grabbing; box-shadow: var(--shadow-overlay); }
 
 .clip-label {
   position: absolute;
@@ -412,7 +424,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   font-size: 10px;
   font-weight: 600;
   color: #fff;
-  background: rgba(24, 24, 27, 0.7);
+  background: rgba(43, 45, 66, 0.8);
   border-radius: 4px;
 }
 
@@ -433,8 +445,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   right: 4px;
   top: 16px;
   bottom: 16px;
-  border-left: 1px solid rgba(255, 255, 255, 0.8);
-  border-right: 1px solid rgba(255, 255, 255, 0.8);
+  border-left: 1px solid rgba(43, 45, 66, 0.7);
+  border-right: 1px solid rgba(43, 45, 66, 0.7);
 }
 .trim-start { left: 0; border-radius: 5px 0 0 5px; }
 .trim-end { right: 0; border-radius: 0 5px 5px 0; }
@@ -496,18 +508,47 @@ input[type="text"], input:not([type]) {
   font: 13px var(--font-mono);
   text-align: center;
   color: var(--foreground);
-  background: transparent;
-  border: 1px solid var(--input);
-  border-radius: calc(var(--radius) - 2px);
+  background: var(--hover);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
   user-select: text;
 }
+input:focus { border-color: var(--primary); }
 input.invalid { border-color: var(--destructive); }
 
 .slider-row { display: grid; grid-template-columns: 32px 1fr 52px; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
 .slider-row > span { color: var(--muted-foreground); }
 .slider-row output { text-align: right; font: 12px var(--font-mono); color: var(--muted-foreground); }
-input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
-input[type="range"]:disabled { cursor: default; }
+/* Sliders drawn with the palette: a cream track and an orange thumb with a navy ring. */
+input[type="range"] {
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: var(--input); border-radius: 3px; }
+input[type="range"]::-moz-range-track { height: 6px; background: var(--input); border-radius: 3px; }
+input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  background: var(--primary);
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--primary);
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+}
+input[type="range"]:disabled { cursor: default; opacity: 0.5; }
 
 #mute .i-mute { display: none; }
 #mute.is-muted .i-vol { display: none; }
@@ -531,7 +572,7 @@ input[type="range"]:disabled { cursor: default; }
   color: #fff;
   background: var(--foreground);
   border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(24, 24, 27, 0.3);
+  box-shadow: var(--shadow-overlay);
   transform: translateX(-50%);
 }
 #toast.error { background: #7f1d1d; }
@@ -539,16 +580,120 @@ input[type="range"]:disabled { cursor: default; }
 .toast-main { flex: 1; min-width: 0; }
 #toast-msg { display: block; font-size: 13px; white-space: pre-wrap; user-select: text; }
 #toast-bar { height: 6px; margin-top: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
-#toast-fill { width: 0; height: 100%; background: var(--ring); transition: width 0.15s linear; }
+#toast-fill { width: 0; height: 100%; background: var(--primary); transition: width 0.15s linear; }
 #toast .btn-outline { color: #fff; background: transparent; border-color: rgba(255, 255, 255, 0.4); }
 #toast .btn-outline:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
 #toast .icon-btn { color: #fff; }
 #toast .icon-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.15); }
 
-/* ---------- Narrow windows ---------- */
+/* ---------- Responsive ---------- */
+
+/* The clip settings button only exists where that panel is a sheet (small screens). */
+.props-toggle { display: none; }
+
+/* Dragging on a clip, a trim handle or the ruler must not scroll the page on touch screens;
+   an empty part of the timeline still pans it. */
+.clip, .trim, #ruler { touch-action: none; }
+
+/* Narrower desktop windows and tablets: slimmer side panels. */
+@media (max-width: 1100px) {
+  #app { grid-template-columns: 220px minmax(0, 1fr) auto; }
+  #app.media-collapsed { grid-template-columns: 52px minmax(0, 1fr) auto; }
+  #props-panel { width: 248px; }
+}
+
+/* Phones and small tablets: one column that fills the screen. The editor takes all the room
+   left over; My media is a strip of thumbnails pinned to the bottom; clip settings open as
+   a sheet over everything. (If the screen is too short, the page scrolls instead.) */
 @media (max-width: 860px) {
-  #app { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; height: auto; min-height: 100%; }
-  #media-panel { max-height: 260px; }
-  #editor { min-height: 680px; }
-  #props-panel { width: auto; }
+  html, body { height: auto; min-height: 100%; }
+  body { overflow-x: hidden; }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  #editor { order: 1; flex: 1 1 auto; }
+  #media-panel { order: 2; flex: none; }
+
+  #topbar { height: 48px; padding: 0 8px; }
+  #preview-area { flex: 1 1 auto; height: auto; min-height: 150px; padding: 4px 8px 8px; }
+  #fullscreen { right: 12px; bottom: 12px; }
+
+  /* Row 1: the playback controls. Row 2: the time on the left and the edit tools
+     (split, delete, settings) on the right. */
+  #transport {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "controls controls" "time tools";
+    align-items: center;
+    gap: 0 8px;
+    padding: 4px 8px;
+  }
+  #transport .playback { display: contents; }
+  #transport .controls { grid-area: controls; justify-self: center; }
+  #transport #time { grid-area: time; margin-left: 4px; font-size: 12px; }
+  #transport .tools { grid-area: tools; justify-self: end; }
+  #transport .tools-end { display: none; }
+  .props-toggle { display: inline-flex; }
+
+  #timeline { height: 252px; }
+  #zoom { right: 8px; bottom: 8px; }
+
+  /* My media: a horizontal strip, with Import first. */
+  #media-panel .panel-head { display: none; }
+  #media-panel .panel-body { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; overflow: auto hidden; }
+  #media-panel .btn-block { width: auto; flex: none; }
+  #media-empty { margin: 0; align-self: center; text-align: left; }
+  #media-list { display: flex; gap: 10px; margin: 0; }
+  .media-item { flex: none; width: 132px; margin: 0; }
+  #app.media-collapsed #media-panel .panel-body { display: flex; }
+
+  /* Clip settings: a bottom sheet, opened with the sliders button. */
+  #props-panel {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 40;
+    width: auto;
+    max-height: 62vh;
+    max-height: 62dvh;
+    box-shadow: var(--shadow-overlay);
+  }
+
+  #toast {
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    min-width: 0;
+    max-width: none;
+    transform: none;
+  }
+}
+
+/* Screens without a mouse: there is no hover, so the thumbnail buttons stay visible,
+   and everything you touch gets a larger target. */
+@media (hover: none) {
+  .media-actions {
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 6px;
+    background: transparent;
+    opacity: 1;
+  }
+  .media-actions button { width: 32px; height: 32px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+}
+
+@media (pointer: coarse) {
+  .btn { height: 40px; }
+  .icon-btn { min-width: 40px; height: 40px; }
+  .play-btn { width: 44px; height: 44px; }
+  .trim { width: 20px; }
+  input[type="range"] { height: 28px; }
 }
