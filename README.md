@@ -34,7 +34,10 @@ The installer is written to the `release` folder.
 1. **Import media** (or drag files into the window). The first import is added to the timeline automatically.
 2. The timeline has several **lines** (layers). A clip on a higher line covers the lines below it while it plays, and all audio is mixed. Empty lines disappear on their own.
    - The **+** button on a media thumbnail (or a double-click) adds the clip on a **new line** on top, starting at the playhead.
-   - **Drag** a thumbnail onto an existing line to continue it (the clip snaps to the end of the previous clip, to the playhead, or to other clips), or onto the dashed **new line** strip at the top to start another line.
+   - **Drag** a thumbnail (or a clip from another line) and drop it where you want it:
+     - **Inside a line** (the middle of the lane): it continues that line, snapping to the end of the previous clip, the playhead, or other clips. If the spot is taken it goes to the nearest free slot.
+     - **Above or below a line** (the top or bottom edge of a lane, or the gap between two lanes): a purple bar shows where a **new line** opens, right above or below that line.
+     - **On the dashed strips** at the very top or bottom: a new line on top of, or underneath, everything.
 3. **Trim** by dragging a clip's left or right edge, or type exact times in the Clip panel. Trimming does not move the other clips. **Split** (`S`) at the playhead, and drag a clip sideways to move it in time, or up and down to another line.
 4. **Delete** (`Del`) removes the selected clip and closes the gap on its line; `Shift+Del` leaves the gap (it renders as black, silent video).
 5. Select a clip to open the **Clip** panel: trim times, fade in/out, speed (0.5x to 2x), and volume. A fade reveals the lines below.
