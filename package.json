@@ -1,14 +1,29 @@
 {
-  "name": "video-trimmer",
+  "name": "simple-video-editor",
   "version": "1.0.0",
-  "description": "A simple video editor for trimming and joining clips, with a Clipchamp-style timeline.",
+  "description": "A simple video editor for the desktop (Electron) and the browser (ffmpeg.wasm): trim, split and join clips on a multi-line timeline, lossless whenever possible.",
+  "keywords": [
+    "video",
+    "editor",
+    "trim",
+    "ffmpeg",
+    "ffmpeg.wasm",
+    "electron"
+  ],
   "author": "wildanv10",
+  "private": true,
   "main": "main.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis --x64",
+    "start:web": "npm run build:web && node scripts/serve.js dist-web 5180",
     "build:web": "node scripts/build-web.js",
-    "web": "node scripts/build-web.js && node scripts/serve.js dist-web 5180"
+    "build:desktop": "electron-builder --win nsis --x64",
+    "build:icons": "node scripts/build-sprite.js",
+    "check": "node scripts/check.js",
+    "clean": "node scripts/clean.js"
   },
   "dependencies": {
     "ffmpeg-static": "^5.2.0"
@@ -20,8 +35,8 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.wildanv10.videotrimmer",
-    "productName": "Video Trimmer",
+    "appId": "com.wildanv10.simplevideoeditor",
+    "productName": "Simple Video Editor",
     "directories": {
       "output": "release"
     },
@@ -30,13 +45,13 @@
     "files": [
       "main.js",
       "preload.js",
-      "media.js",
       "exporter.js",
+      "export-plan.js",
+      "media.js",
+      "web-api.js",
       "index.html",
       "renderer.js",
-      "styles.css",
-      "export-plan.js",
-      "web-api.js"
+      "styles.css"
     ],
     "asarUnpack": [
       "node_modules/ffmpeg-static/ffmpeg.exe"
@@ -48,7 +63,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "Video-Trimmer-Setup-${version}.exe"
+      "artifactName": "Simple-Video-Editor-Setup-${version}.exe"
     }
   }
 }
