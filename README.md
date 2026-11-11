@@ -85,11 +85,35 @@ Below 860 px wide the editor is a single column that fills the screen: the edito
 
 It runs the same editor with **ffmpeg.wasm** (single-threaded) instead of the native ffmpeg. How it differs from the desktop app:
 
-- **Engine:** the ~31 MB engine downloads on first use, and the browser caches it.
+- **Engine:** the engine downloads on first use (about 10 MB, gzip-compressed; 31 MB once unpacked), and the browser caches it.
 - **Speed:** a lossless export is still fast. A forced re-encode runs inside the browser and is much slower than on the desktop, so prefer short clips there.
 - **Memory:** the finished file is built in memory before it is saved, so very large exports can fail, and phones have far less memory than a computer. Use the desktop app for long or large videos.
 - **Saving:** Chrome and Edge ask where to save; other browsers download the file to the usual folder. "Show in folder" is desktop only.
-- **Hosting:** `npm run build:web` writes a static site to `dist-web/`. It needs `http://` or `https://` (not `file://`). Some static hosts limit the size of a single file, and `ffmpeg-core.wasm` is about 31 MiB (Cloudflare Pages, for example, allows 25 MiB per file).
+- **Hosting:** `npm run build:web` writes a static site to `dist-web/`. It needs `http://` or `https://` (not `file://`). The engine's `.wasm` is shipped as `ffmpeg-core.wasm.gz` (the browser unpacks it), so no file is larger than about 10 MiB, well under the 25 MiB per-file limit of hosts such as Cloudflare Pages. The build fails if any file goes over that limit.
+
+### Deploy to Cloudflare Pages
+
+The web build is a static site, so it needs no server code.
+
+**From your computer** (no build runs on Cloudflare):
+
+```
+npx wrangler login       # once
+npm run deploy:web
+```
+
+This builds the site and uploads `dist-web/` to a Pages project named `simple-video-editor` (Wrangler offers to create it the first time). Pages gives it HTTPS, which Chrome and Edge need for the save dialog.
+
+**From Git** (Cloudflare builds on every push): create a Pages project from your repository with these settings.
+
+| Setting | Value |
+|---|---|
+| Framework preset | None |
+| Build command | `npm run build:web` |
+| Build output directory | `dist-web` |
+| Environment variable | `ELECTRON_SKIP_BINARY_DOWNLOAD` = `1` (skips Electron's large binary download) |
+
+Keep only one lockfile (`package-lock.json` or `pnpm-lock.yaml`) in the repository so the install step is unambiguous. The `_headers` file written by the build sets caching for the engine files.
 
 ## Scripts
 
@@ -98,6 +122,7 @@ It runs the same editor with **ffmpeg.wasm** (single-threaded) instead of the na
 | `npm start` | Run the desktop app |
 | `npm run start:web` | Build the web version and serve it at http://127.0.0.1:5180/ |
 | `npm run build:web` | Build the static web site into `dist-web/` |
+| `npm run deploy:web` | Build the web site and upload it to Cloudflare Pages (project `simple-video-editor`) |
 | `npm run build:desktop` | Build the Windows installer into `release/` |
 | `npm run build:icons` | Rebuild the inline SVG icon sprite in `index.html` from `icons/` |
 | `npm run check` | Syntax-check every JavaScript file |
