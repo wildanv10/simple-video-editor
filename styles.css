@@ -362,11 +362,24 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outl
   font-size: 12px;
 }
 .new-lane::before {
-  content: "Drop here to start a new line";
+  content: "Drop here for a new line on top";
   position: sticky;
   left: 14px;
 }
+.new-lane-bottom::before { content: "Drop here for a new line at the bottom"; }
 .new-lane.drop-target { border-color: var(--primary); color: var(--primary); }
+
+/* Marks where a new line opens when a drop lands between two lines. */
+#drop-line {
+  position: absolute;
+  z-index: 16;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+  pointer-events: none;
+}
 
 #drop-ghost {
   position: absolute;

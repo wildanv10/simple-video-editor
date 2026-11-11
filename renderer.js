@@ -154,18 +154,32 @@ function afterEdit() {
 
 /* ---------- Edits ---------- */
 
-// Add media to an existing line (trackId) or to a new line on top (trackId === null).
-function addMediaClip(mediaId, trackId = null, start = state.playhead) {
+// Open a new line where a drop target says: on top, at the bottom, or right above/below
+// an existing line. Call inside edit(). Returns the new line's id.
+function openLine(target) {
+  const id = nextTrackId++;
+  if (target.where === 'top') state.tracks.push(id);
+  else if (target.where === 'bottom') state.tracks.unshift(id);
+  else {
+    const index = state.tracks.indexOf(target.beside);
+    state.tracks.splice(target.where === 'above' ? index + 1 : index, 0, id);
+  }
+  return id;
+}
+
+// Add media inside an existing line (target.kind === 'inside') or on a new line.
+// The default is a new line on top, which is what the + button does.
+function addMediaClip(mediaId, target = { kind: 'new', where: 'top' }, start = state.playhead) {
   const media = state.media.get(mediaId);
   if (!media) return;
   edit(() => {
-    let track = trackId;
+    let track;
     let at = Math.max(0, start);
-    if (track === null) {
-      track = nextTrackId++;
-      state.tracks.push(track);
-    } else {
+    if (target.kind === 'inside') {
+      track = target.trackId;
       at = findSlot(track, at, media.duration, null);
+    } else {
+      track = openLine(target);
     }
     const clip = { id: nextClipId++, mediaId, track, start: at, in: 0, out: media.duration, speed: 1, volume: 1, fadeIn: 0, fadeOut: 0 };
     state.clips.push(clip);
@@ -439,8 +453,10 @@ const scroller = $('tl-scroll');
 const content = $('tl-content');
 const lanesEl = $('lanes');
 const newLane = $('new-lane');
+const newLaneBottom = $('new-lane-bottom');
 const ghost = Object.assign(document.createElement('div'), { id: 'drop-ghost', hidden: true });
-lanesEl.appendChild(ghost);
+const dropLine = Object.assign(document.createElement('div'), { id: 'drop-line', hidden: true });
+lanesEl.append(ghost, dropLine);
 
 function renderRuler(width) {
   const ruler = $('ruler');
@@ -479,9 +495,9 @@ function renderTimeline() {
     lane.className = 'lane';
     lane.dataset.track = trackId;
     for (const item of byTrack.get(trackId)) lane.appendChild(clipElement(item));
-    lanesEl.appendChild(lane);
+    lanesEl.insertBefore(lane, newLaneBottom);
   }
-  ghost.hidden = true;
+  hideGhost();
   updatePlayhead();
   updateTime();
 }
@@ -580,41 +596,65 @@ scroller.addEventListener('wheel', (e) => {
 
 const timeAtX = (clientX) => (clientX - content.getBoundingClientRect().left) / state.pps;
 
-// The line (or the "new line" strip) nearest to a pointer height.
-function laneAtY(clientY) {
-  let best = null;
+// What a pointer height points at. The middle of a line means "inside" it; its top or
+// bottom edge (or the gap between two lines) means a new line right above or below it;
+// the dashed strips at the very top and bottom open a line at that end.
+const EDGE = 0.3; // share of a line's height that counts as its top or bottom edge
+
+function targetAtY(clientY) {
+  const candidates = [newLane, ...lanesEl.querySelectorAll('.lane:not(.new-lane)'), newLaneBottom];
+  let best = candidates[0];
   let bestDistance = Infinity;
-  for (const el of lanesEl.querySelectorAll('.lane')) {
+  for (const el of candidates) {
     const rect = el.getBoundingClientRect();
-    const distance = Math.abs(clientY - (rect.top + rect.height / 2));
+    const distance = clientY < rect.top ? rect.top - clientY : Math.max(0, clientY - rect.bottom);
     if (distance < bestDistance) {
       best = el;
       bestDistance = distance;
     }
   }
-  return { el: best, trackId: best === newLane ? null : Number(best.dataset.track) };
+  if (best === newLane) return { kind: 'new', where: 'top', el: best };
+  if (best === newLaneBottom) return { kind: 'new', where: 'bottom', el: best };
+  const trackId = Number(best.dataset.track);
+  const rect = best.getBoundingClientRect();
+  const position = (clientY - rect.top) / rect.height;
+  if (position < EDGE) return { kind: 'new', where: 'above', beside: trackId, el: best };
+  if (position > 1 - EDGE) return { kind: 'new', where: 'below', beside: trackId, el: best };
+  return { kind: 'inside', trackId, el: best };
 }
 
-function showGhost(laneEl, start, len) {
+function showGhost(target, start, len) {
+  hideGhost();
   ghost.hidden = false;
   ghost.style.left = `${start * state.pps}px`;
   ghost.style.width = `${Math.max(4, len * state.pps)}px`;
-  ghost.style.top = `${laneEl.offsetTop + 4}px`;
-  ghost.style.height = `${laneEl.offsetHeight - 8}px`;
-  for (const el of lanesEl.querySelectorAll('.lane')) el.classList.toggle('drop-target', el === laneEl);
+  const { el } = target;
+  if (target.kind === 'inside' || target.where === 'top' || target.where === 'bottom') {
+    el.classList.add('drop-target');
+    ghost.style.top = `${el.offsetTop + 4}px`;
+    ghost.style.height = `${el.offsetHeight - 8}px`;
+  } else {
+    // Between lines: a bar marks where the new line will open.
+    const y = target.where === 'above' ? el.offsetTop - 3 : el.offsetTop + el.offsetHeight + 3;
+    dropLine.hidden = false;
+    dropLine.style.top = `${y - 1}px`;
+    ghost.style.top = `${y - 11}px`;
+    ghost.style.height = '22px';
+  }
 }
 
 function hideGhost() {
   ghost.hidden = true;
+  dropLine.hidden = true;
   for (const el of lanesEl.querySelectorAll('.lane')) el.classList.remove('drop-target');
 }
 
 // Where a clip of length `len` would land if dropped under the pointer.
 function dropSlot(clientX, clientY, len, ignoreId, offset = 0) {
-  const lane = laneAtY(clientY);
+  const target = targetAtY(clientY);
   const desired = snapStart(Math.max(0, timeAtX(clientX) - offset), len, ignoreId);
-  const start = lane.trackId === null ? desired : findSlot(lane.trackId, desired, len, ignoreId);
-  return { ...lane, start };
+  const start = target.kind === 'inside' ? findSlot(target.trackId, desired, len, ignoreId) : desired;
+  return { ...target, start };
 }
 
 function enableScrub(el, deselect) {
@@ -703,7 +743,7 @@ function beginMove(e, item, el) {
     el.style.transform = `translate(${dx}px, ${dy}px)`;
     // The slot follows the clip's own left edge, not the pointer.
     slot = dropSlot(ev.clientX, ev.clientY, item.len, clip.id, (startX - content.getBoundingClientRect().left) / state.pps - item.start);
-    showGhost(slot.el, slot.start, item.len);
+    showGhost(slot, slot.start, item.len);
   };
   el.addEventListener('pointermove', move);
   el.addEventListener('lostpointercapture', () => {
@@ -713,13 +753,9 @@ function beginMove(e, item, el) {
     hideGhost();
     if (!dragging) {
       seekTo(clamp(timeAtX(e.clientX), item.start, item.end - 1e-3));
-    } else if (slot && (slot.trackId !== clip.track || Math.abs(slot.start - clip.start) > 1e-6)) {
+    } else if (slot && (slot.kind === 'new' || slot.trackId !== clip.track || Math.abs(slot.start - clip.start) > 1e-6)) {
       edit(() => {
-        if (slot.trackId === null) {
-          slot.trackId = nextTrackId++;
-          state.tracks.push(slot.trackId);
-        }
-        clip.track = slot.trackId;
+        clip.track = slot.kind === 'inside' ? slot.trackId : openLine(slot);
         clip.start = slot.start;
       });
     } else {
@@ -737,7 +773,7 @@ lanesEl.addEventListener('dragover', (e) => {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'copy';
   const slot = dropSlot(e.clientX, e.clientY, media.duration, null);
-  showGhost(slot.el, slot.start, media.duration);
+  showGhost(slot, slot.start, media.duration);
 });
 lanesEl.addEventListener('dragleave', (e) => {
   if (!lanesEl.contains(e.relatedTarget)) hideGhost();
@@ -749,7 +785,7 @@ lanesEl.addEventListener('drop', (e) => {
   e.stopPropagation();
   const slot = dropSlot(e.clientX, e.clientY, media.duration, null);
   hideGhost();
-  addMediaClip(media.id, slot.trackId, slot.start);
+  addMediaClip(media.id, slot, slot.start);
 });
 
 /* ---------- My media ---------- */
@@ -837,7 +873,7 @@ async function importPaths(paths) {
     }
     state.media.set(info.id, info);
     renderMedia();
-    if (!state.clips.length) addMediaClip(info.id, null, 0); // the first import lands on the timeline
+    if (!state.clips.length) addMediaClip(info.id, undefined, 0); // the first import lands on the timeline
   }
   importing = false;
   $('import').disabled = false;
