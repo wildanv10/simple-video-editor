@@ -1,8 +1,10 @@
 # Video Trimmer
 
-A small desktop video editor (Electron) with a Clipchamp-style layout: **My media** on the left, preview in the middle, a timeline underneath. It opens straight into the editor, so there is no home screen, no project saving and no account.
+A small video editor with a Clipchamp-style layout: **My media** on the left, preview in the middle, a timeline underneath. It opens straight into the editor, so there is no home screen, no project saving and no account.
 
-## Run
+It runs two ways from the same code: as a **desktop app** (Electron, native ffmpeg) and as a **web app** (any modern browser, ffmpeg.wasm). Nothing is ever uploaded: in both cases your videos are processed on your own computer.
+
+## Run the desktop app
 
 ```
 npm install
@@ -10,6 +12,23 @@ npm start
 ```
 
 ffmpeg is bundled through `ffmpeg-static`, so no separate install is needed.
+
+## Run it on the web
+
+```
+npm install
+npm run web
+```
+
+Then open <http://127.0.0.1:5180/>. `npm run build:web` only builds the static site into `dist-web/`, which you can host on any static web server (it needs `http://` or `https://`, not `file://`).
+
+How the web version differs from the desktop app:
+
+- **Engine:** ffmpeg.wasm (single-threaded). The ~31 MB engine downloads on first use and the browser caches it.
+- **Speed:** lossless export (stream copy) is still fast. Re-encoding (effects, layers, gaps, 1080p/720p) runs inside the browser and is much slower than the desktop app, so prefer short clips there.
+- **Memory:** the finished file is built in memory before it is saved, so very large exports can fail. Use the desktop app for long or large videos.
+- **Saving:** Chrome and Edge ask where to save; other browsers download the file to the usual Downloads folder. "Show in folder" exists only on the desktop.
+- **Files:** pick files with **Import media** or drag them into the page. Cancelling an export restarts the engine, which takes a moment.
 
 ## Build the installer (Windows)
 
@@ -63,6 +82,16 @@ Because lossless cuts can only start on a keyframe, a clip may begin slightly ea
 | `Ctrl` + mouse wheel | Zoom the timeline |
 
 Note: the preview uses the Chromium player, so codecs such as HEVC/H.265 may not be previewable.
+
+## How the code is organised
+
+| File | Role |
+|---|---|
+| `renderer.js`, `index.html`, `styles.css` | The editor UI, shared by both versions |
+| `export-plan.js`, `media.js` | Pure logic shared by both versions: probing, validation, lossless-or-re-encode decision, ffmpeg arguments |
+| `main.js`, `preload.js`, `exporter.js` | Desktop only: Electron main process and native ffmpeg |
+| `web-api.js` | Web only: the same `window.api` implemented with ffmpeg.wasm (does nothing inside Electron) |
+| `scripts/build-web.js`, `scripts/serve.js` | Build and locally serve the web version |
 
 ## Icons
 
