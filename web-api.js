@@ -211,18 +211,20 @@
 
   const encoder = new TextEncoder();
 
-  // Same plan as the desktop app, run in the browser. Returns { code, data, log }.
-  async function runExport(clips, mode, ext) {
-    const method = Plan.planExport(clips, mode);
+  // The engine here runs on one thread, so when a re-encode cannot be avoided, favour speed.
+  const WEB_VIDEO_ARGS = ['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23'];
+
+  // Same plan as the desktop app, run in the browser. Returns { code, data, log, ...plan }.
+  async function runExport(clips, plan, ext) {
     const final = `/final${ext}`;
     const made = [];
     const stage = (args, scale) => exec(args, (line) => {
       const t = timeOf(line);
-      if (t !== null) progressCallback(Math.min(1, Math.max(0, scale(t))));
+      if (t !== null) progressCallback(Math.min(1, Math.max(0, scale(t))), plan);
     });
 
     let result;
-    if (method === 'copy') {
+    if (plan.method === 'copy') {
       const ordered = [...clips].sort(Plan.byTime);
       const total = ordered.reduce((sum, c) => sum + Plan.sourceLength(c), 0);
       if (ordered.length === 1) {
@@ -246,7 +248,7 @@
       }
     } else {
       const total = Plan.totalLength(clips);
-      result = await stage([...Plan.buildReencodeArgs(clips, mode), final], (t) => t / total);
+      result = await stage([...Plan.buildReencodeArgs(clips, { videoArgs: WEB_VIDEO_ARGS }), final], (t) => t / total);
     }
 
     made.push(final);
@@ -256,7 +258,7 @@
       // The engine is gone if the export was cancelled meanwhile.
       for (const file of made) await ffmpeg?.deleteFile(file).catch(() => {});
     }
-    return { ...result, method };
+    return { ...result, ...plan };
   }
 
   function download(blob, name) {
@@ -269,10 +271,9 @@
     setTimeout(() => URL.revokeObjectURL(link.href), 60000);
   }
 
-  async function exportVideo({ clips, mode }) {
+  async function exportVideo({ clips }) {
     if (exporting) return { error: 'Another export is still running.' };
     if (!Array.isArray(clips) || clips.length === 0) return { error: 'The timeline is empty.' };
-    if (!['auto', '1080', '720'].includes(mode)) mode = 'auto';
 
     let resolved;
     try {
@@ -283,7 +284,8 @@
 
     // Stream copy keeps the source container; re-encoding always writes MP4.
     const lead = library.get([...resolved].sort(Plan.byLayer)[0].mediaId);
-    const ext = Plan.planExport(resolved, mode) === 'copy' ? lead.ext : '.mp4';
+    const plan = Plan.planExport(resolved); // { method: 'copy' | 'reencode', why }
+    const ext = plan.method === 'copy' ? lead.ext : '.mp4';
     const suggestedName = `${baseName(lead.name)}_trim${ext}`;
 
     exporting = true;
@@ -303,7 +305,8 @@
         }
       }
 
-      const result = await enqueue(() => runExport(resolved, mode, ext)).catch((err) => {
+      progressCallback(0, plan); // tells the UI right away whether this is lossless or a re-encode
+      const result = await enqueue(() => runExport(resolved, plan, ext)).catch((err) => {
         if (cancelled) return { code: -1, log: '' };
         throw err;
       });
@@ -315,10 +318,10 @@
         const writable = await handle.createWritable();
         await writable.write(blob);
         await writable.close();
-        return { ok: true, output: handle.name, method: result.method };
+        return { ok: true, output: handle.name, method: result.method, why: result.why };
       }
       download(blob, suggestedName);
-      return { ok: true, output: suggestedName, method: result.method };
+      return { ok: true, output: suggestedName, method: result.method, why: result.why };
     } catch (err) {
       return { error: `Export failed: ${err.message}` };
     } finally {
