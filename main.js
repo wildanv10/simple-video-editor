@@ -29,7 +29,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 620,
     backgroundColor: '#f4f4f8',
-    title: 'Video Trimmer',
+    title: 'Simple Video Editor',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -56,7 +56,7 @@ function tail(text, lines) {
 }
 
 async function makeThumbnail(file, duration) {
-  const out = path.join(app.getPath('temp'), `video-trimmer-thumb-${Date.now()}.jpg`);
+  const out = path.join(app.getPath('temp'), `simple-video-editor-thumb-${Date.now()}.jpg`);
   const at = Math.min(1, duration / 3) || 0;
   const result = await runFfmpeg([
     '-hide_banner', '-nostdin', '-y', '-ss', at.toFixed(3), '-i', file,
@@ -81,7 +81,7 @@ async function prepare(file) {
   let working = file;
   let temp = false;
   if (!NATIVE_FORMATS.test(probe.format)) {
-    working = path.join(app.getPath('temp'), `video-trimmer-${Date.now()}-${nextId}.mp4`);
+    working = path.join(app.getPath('temp'), `simple-video-editor-${Date.now()}-${nextId}.mp4`);
     const remux = await runFfmpeg([
       '-hide_banner', '-nostdin', '-y', '-i', file,
       '-map', '0:v:0', '-map', '0:a?', '-sn', '-dn',
@@ -173,7 +173,7 @@ ipcMain.handle('export', async (e, { clips }) => {
     return { error: 'The output file must not be one of the source files.' };
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'video-trimmer-export-'));
+  const tmpDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'simple-video-editor-export-'));
   const ctl = { cancelled: false, proc: null };
   job = ctl;
   const send = (fraction, info) => {
