@@ -6,12 +6,16 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis --x64"
+    "dist": "electron-builder --win nsis --x64",
+    "build:web": "node scripts/build-web.js",
+    "web": "node scripts/build-web.js && node scripts/serve.js dist-web 5180"
   },
   "dependencies": {
     "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8"
   },
@@ -30,7 +34,9 @@
       "exporter.js",
       "index.html",
       "renderer.js",
-      "styles.css"
+      "styles.css",
+      "export-plan.js",
+      "web-api.js"
     ],
     "asarUnpack": [
       "node_modules/ffmpeg-static/ffmpeg.exe"
