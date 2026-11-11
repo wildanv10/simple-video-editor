@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' file:; style-src 'self'; script-src 'self'">
+  <title>Video Trimmer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><svg class="lucide lucide-scissors" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <circle cx="6" cy="6" r="3"/> <path d="M8.12 8.12 12 12"/> <path d="M20 4 8.12 15.88"/> <circle cx="6" cy="18" r="3"/> <path d="M14.8 14.8 20 20"/> </svg><span>Video Trimmer</span></div>
+    <span id="filename">Belum ada video</span>
+    <button id="open" class="btn btn-outline"><svg class="lucide lucide-folder-open" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/> </svg>Buka Video</button>
+  </header>
+
+  <main class="stage-wrap">
+    <div id="stage">
+      <video id="video" preload="metadata"></video>
+      <div id="empty">
+        <svg class="lucide lucide-film" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <rect width="18" height="18" x="3" y="3" rx="2"/> <path d="M7 3v18"/> <path d="M3 7.5h4"/> <path d="M3 12h18"/> <path d="M3 16.5h4"/> <path d="M17 3v18"/> <path d="M17 7.5h4"/> <path d="M17 16.5h4"/> </svg>
+        <p class="empty-title">Belum ada video</p>
+        <p>Klik “Buka Video” atau seret file video ke sini</p>
+      </div>
+    </div>
+  </main>
+
+  <section id="controls" class="card disabled">
+    <div id="timeline">
+      <div id="range"></div>
+      <div id="playhead"></div>
+      <div id="hStart" class="handle" title="Titik mulai"></div>
+      <div id="hEnd" class="handle" title="Titik akhir"></div>
+    </div>
+
+    <div class="row">
+      <button id="back10" class="btn btn-outline" title="Mundur 10 detik (← atau J)"><svg class="lucide lucide-rewind" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 6a2 2 0 0 0-3.414-1.414l-6 6a2 2 0 0 0 0 2.828l6 6A2 2 0 0 0 12 18z"/> <path d="M22 6a2 2 0 0 0-3.414-1.414l-6 6a2 2 0 0 0 0 2.828l6 6A2 2 0 0 0 22 18z"/> </svg>10 dtk</button>
+      <button id="play" class="btn btn-secondary" title="Putar / jeda (Spasi)">
+        <svg class="lucide lucide-play i-play" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/> </svg><svg class="lucide lucide-pause i-pause" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <rect x="14" y="3" width="5" height="18" rx="1"/> <rect x="5" y="3" width="5" height="18" rx="1"/> </svg><span id="playLabel">Putar</span>
+      </button>
+      <button id="fwd10" class="btn btn-outline" title="Maju 10 detik (→ atau L)">10 dtk<svg class="lucide lucide-fast-forward" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 6a2 2 0 0 1 3.414-1.414l6 6a2 2 0 0 1 0 2.828l-6 6A2 2 0 0 1 12 18z"/> <path d="M2 6a2 2 0 0 1 3.414-1.414l6 6a2 2 0 0 1 0 2.828l-6 6A2 2 0 0 1 2 18z"/> </svg></button>
+      <span id="current">00:00.00 / 00:00.00</span>
+      <span class="spacer"></span>
+      <button id="setStart" class="btn btn-outline" title="Jadikan posisi sekarang sebagai titik mulai (I)"><svg class="lucide lucide-arrow-left-to-line" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M3 19V5"/> <path d="m13 6-6 6 6 6"/> <path d="M7 12h14"/> </svg>Set Mulai<kbd>I</kbd></button>
+      <button id="setEnd" class="btn btn-outline" title="Jadikan posisi sekarang sebagai titik akhir (O)">Set Akhir<kbd>O</kbd><svg class="lucide lucide-arrow-right-to-line" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M17 12H3"/> <path d="m11 18 6-6-6-6"/> <path d="M21 5v14"/> </svg></button>
+    </div>
+
+    <hr class="separator">
+
+    <div class="row">
+      <label>Mulai <input id="startInput" value="00:00.00" spellcheck="false"></label>
+      <label>Akhir <input id="endInput" value="00:00.00" spellcheck="false"></label>
+      <span class="badge">Durasi <b id="length">00:00.00</b></span>
+      <span class="spacer"></span>
+      <button id="export" class="btn btn-primary"><svg class="lucide lucide-download" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 15V3"/> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> <path d="m7 10 5 5 5-5"/> </svg>Simpan Potongan</button>
+      <button id="cancel" class="btn btn-destructive" hidden><svg class="lucide lucide-x" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M18 6 6 18"/> <path d="m6 6 12 12"/> </svg>Batal</button>
+    </div>
+
+    <div id="statusbar">
+      <div id="bar" hidden><div id="fill"></div></div>
+      <span id="status"></span>
+      <button id="reveal" class="btn btn-outline btn-sm" hidden><svg class="lucide lucide-folder-search" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1"/> <path d="m21 21-1.9-1.9"/> <circle cx="17" cy="17" r="3"/> </svg>Tampilkan di folder</button>
+    </div>
+  </section>
+  <script src="renderer.js"></script>
+</body>
+</html>
