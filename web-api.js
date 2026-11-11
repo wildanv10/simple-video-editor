@@ -59,7 +59,29 @@
     } catch { /* not mounted */ }
   }
 
-  // Loading is lazy: the 30 MB engine is only fetched when the first file is imported.
+  // The engine's .wasm is shipped gzip-compressed (31 MB raw is over the per-file limit of
+  // some static hosts, e.g. Cloudflare Pages' 25 MiB). It is unpacked once per page load and
+  // handed to the engine as a blob URL. If a server already unpacked it on the way, the
+  // bytes are not gzip any more and are used as they are.
+  let wasmUrl = null;
+
+  async function engineWasmUrl() {
+    if (wasmUrl) return wasmUrl;
+    const response = await fetch('vendor/ffmpeg/ffmpeg-core.wasm.gz');
+    if (!response.ok) throw new Error('Could not download the video engine.');
+    let bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+      if (typeof DecompressionStream === 'undefined') {
+        throw new Error('This browser is too old to unpack the video engine. Please update it.');
+      }
+      const unpacked = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      bytes = new Uint8Array(await new Response(unpacked).arrayBuffer());
+    }
+    wasmUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/wasm' }));
+    return wasmUrl;
+  }
+
+  // Loading is lazy: the engine is only fetched when the first file is imported.
   // After a cancelled export the engine is restarted, so every file is mounted again.
   async function engine() {
     if (ffmpeg?.loaded) return ffmpeg;
@@ -71,7 +93,7 @@
         instance.on('log', ({ message }) => logListeners.forEach((fn) => fn(message)));
         await instance.load({
           coreURL: new URL('vendor/ffmpeg/ffmpeg-core.js', location.href).href,
-          wasmURL: new URL('vendor/ffmpeg/ffmpeg-core.wasm', location.href).href,
+          wasmURL: await engineWasmUrl(),
         });
         for (const media of library.values()) await mountFile(instance, media.dir, media.blob);
         ffmpeg = instance;
