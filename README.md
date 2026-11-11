@@ -25,7 +25,7 @@ Then open <http://127.0.0.1:5180/>. `npm run build:web` only builds the static s
 How the web version differs from the desktop app:
 
 - **Engine:** ffmpeg.wasm (single-threaded). The ~31 MB engine downloads on first use and the browser caches it.
-- **Speed:** lossless export (stream copy) is still fast. Re-encoding (effects, layers, gaps, 1080p/720p) runs inside the browser and is much slower than the desktop app, so prefer short clips there.
+- **Speed:** lossless export (stream copy) is still fast. A forced re-encode (effects, overlapping clips, gaps, or different formats) runs inside the browser and is much slower than on the desktop, so prefer short clips there.
 - **Memory:** the finished file is built in memory before it is saved, so very large exports can fail. Use the desktop app for long or large videos.
 - **Saving:** Chrome and Edge ask where to save; other browsers download the file to the usual Downloads folder. "Show in folder" exists only on the desktop.
 - **Files:** pick files with **Import media** or drag them into the page. Cancelling an export restarts the engine, which takes a moment.
@@ -42,8 +42,8 @@ The installer is written to the `release` folder.
 
 | | |
 |---|---|
-| Speed | Almost instant: stream copy (`-c copy`) in Auto export |
-| Quality | Identical to the source in Auto export |
+| Speed | Almost instant: clips are joined by stream copy (`-c copy`) whenever possible |
+| Quality | Identical to the source when joined by stream copy |
 | Account | Not needed |
 | TS / HLS | Remuxed automatically (e.g. MPEG-TS from an `.m3u8` download renamed to `.mp4`) |
 | Cut precision | Limited to keyframes in lossless export |
@@ -60,13 +60,22 @@ The installer is written to the `release` folder.
 3. **Trim** by dragging a clip's left or right edge, or type exact times in the Clip panel. Trimming does not move the other clips. **Split** (`S`) at the playhead, and drag a clip sideways to move it in time, or up and down to another line.
 4. **Delete** (`Del`) removes the selected clip and closes the gap on its line; `Shift+Del` leaves the gap (it renders as black, silent video).
 5. Select a clip to open the **Clip** panel: trim times, fade in/out, speed (0.5x to 2x), and volume. A fade reveals the lines below.
-6. **Export** and choose a quality:
-   - **Auto**: original quality. Lossless stream copy when nothing needs re-encoding.
-   - **1080p** / **720p**: re-encoded to that size (the short side of the first clip on the lowest line).
+6. **Export.** There are no options: the app picks the fastest way that gives the result you built.
 
-Export falls back to re-encoding when there is more than one line, when a line has a gap, when a clip has effects, when you pick 1080p/720p, or when the clips do not share the same codec, size and frame rate (stream copy cannot join those). The frame rate follows the source, up to 60 fps. Re-encoding uses H.264 + AAC in an MP4.
+### Fast (lossless) or slow (re-encode)
 
-Because lossless cuts can only start on a keyframe, a clip may begin slightly earlier than the point you chose. Use 1080p/720p when you need frame-accurate cuts.
+The clips are joined **without re-encoding** (a fraction of a second, no quality loss) when none of these apply:
+
+| Re-encoding is only used when | What to do to keep it lossless |
+|---|---|
+| a clip has an **effect** (fade, speed, volume) | leave the effects off |
+| clips **overlap in time** on different lines | put them one after another; which line a clip is on does not matter |
+| there is a **gap** between clips | close the gap (`Del` closes it for you) |
+| clips use **different formats** (codec, profile, size, frame rate rounded to a whole number, audio) | use clips from the same source or with the same settings |
+
+While exporting, the app says which method it is using and, for a re-encode, exactly why. Re-encoding keeps the size of the first clip on the lowest line, the highest source frame rate (up to 60 fps), and writes H.264 + AAC in an MP4. It is far slower than joining: on a 6-core desktop, 1080p re-encodes at roughly 5 to 6 times real time, against about 200 times for a lossless join.
+
+Because lossless cuts can only start on a keyframe, a clip may begin slightly earlier than the point you chose (a re-encode is frame-accurate).
 
 ## Shortcuts
 
