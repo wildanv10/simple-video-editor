@@ -5,7 +5,8 @@ const { spawn } = require('child_process');
 const { pathToFileURL } = require('url');
 
 const { parseProbe } = require('./media');
-const { exportProject, planExport } = require('./exporter');
+const { exportProject } = require('./exporter');
+const { normalizeClips, planExport } = require('./export-plan');
 
 const ffmpegPath = require('ffmpeg-static').replace('app.asar', 'app.asar.unpacked');
 
@@ -139,37 +140,6 @@ ipcMain.handle('cancel', () => {
   }
 });
 
-// Validate renderer input and attach the library data (paths, stream info) to each clip.
-function resolveClips(clips) {
-  const num = (v, fallback) => (Number.isFinite(v) ? v : fallback);
-  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-  return clips.map((c) => {
-    const media = library.get(c.mediaId);
-    if (!media) throw new Error('A clip refers to media that is no longer loaded.');
-    const limit = media.duration || Infinity;
-    const start = clamp(num(c.in, 0), 0, limit);
-    const end = clamp(num(c.out, 0), 0, limit);
-    if (end - start < 0.05) throw new Error('A clip is too short to export.');
-    return {
-      mediaId: c.mediaId,
-      path: media.path,
-      layer: Math.max(0, Math.round(num(c.layer, 0))),
-      start: Math.max(0, num(c.start, 0)),
-      in: start,
-      out: end,
-      speed: clamp(num(c.speed, 1), 0.5, 2),
-      volume: clamp(num(c.volume, 1), 0, 1),
-      fadeIn: clamp(num(c.fadeIn, 0), 0, 60),
-      fadeOut: clamp(num(c.fadeOut, 0), 0, 60),
-      hasAudio: media.hasAudio,
-      width: media.width,
-      height: media.height,
-      fps: media.fps,
-      sig: media.sig,
-    };
-  });
-}
-
 ipcMain.handle('export', async (e, { clips, mode }) => {
   if (job) return { error: 'Another export is still running.' };
   if (!Array.isArray(clips) || clips.length === 0) return { error: 'The timeline is empty.' };
@@ -177,7 +147,8 @@ ipcMain.handle('export', async (e, { clips, mode }) => {
 
   let resolved;
   try {
-    resolved = resolveClips(clips);
+    // Validate the UI's input and attach the library data (paths, stream info) to each clip.
+    resolved = normalizeClips(clips, (id) => library.get(id));
   } catch (err) {
     return { error: err.message };
   }
