@@ -32,13 +32,15 @@ function run(ctx, args, onTime) {
 }
 
 // Lossless: cut each clip by stream copy, then join the pieces with the concat demuxer.
-async function exportCopy(ctx) {
+// (Joining in one step with inpoint/outpoint is a little faster but leaves timestamp
+// errors at the joins, so the pieces are cut first.)
+async function exportCopy(ctx, info) {
   const { outputPath, tmpDir, ctl, onProgress } = ctx;
   const clips = [...ctx.clips].sort(byTime);
   const total = clips.reduce((sum, c) => sum + sourceLength(c), 0);
 
   if (clips.length === 1) {
-    return run(ctx, [...plan.cutArgs(clips[0]), ...progress, outputPath], (t) => onProgress(t / total));
+    return run(ctx, [...plan.cutArgs(clips[0]), ...progress, outputPath], (t) => onProgress(t / total, info));
   }
 
   const ext = path.extname(outputPath);
@@ -47,7 +49,7 @@ async function exportCopy(ctx) {
   for (const [i, c] of clips.entries()) {
     if (ctl.cancelled) return { code: -1, stderr: '' };
     const part = path.join(tmpDir, `part${i}${ext}`);
-    const result = await run(ctx, [...plan.cutArgs(c), ...progress, part], (t) => onProgress(((done + t) / total) * 0.8));
+    const result = await run(ctx, [...plan.cutArgs(c), ...progress, part], (t) => onProgress(((done + t) / total) * 0.8, info));
     if (result.code !== 0) return result;
     done += sourceLength(c);
     parts.push(part);
@@ -55,23 +57,21 @@ async function exportCopy(ctx) {
 
   const list = path.join(tmpDir, 'parts.txt');
   fs.writeFileSync(list, plan.concatListText(parts));
-  return run(ctx, [...plan.concatArgs(list), ...progress, outputPath], (t) => onProgress(0.8 + (t / total) * 0.2));
+  return run(ctx, [...plan.concatArgs(list), ...progress, outputPath], (t) => onProgress(0.8 + (t / total) * 0.2, info));
+}
+
+// Re-encode (only when stream copy cannot do it). A GPU encoder was tried on a 1080p test
+// and gained only about 5% (decoding is the limit) for bigger files, so x264 is used.
+function exportReencode(ctx, info) {
+  const { clips, outputPath, onProgress } = ctx;
+  const total = totalLength(clips);
+  return run(ctx, [...plan.buildReencodeArgs(clips), ...progress, outputPath], (t) => onProgress(t / total, info));
 }
 
 async function exportProject(ctx) {
-  const { clips, mode, outputPath, onProgress } = ctx;
-  const method = plan.planExport(clips, mode);
-  const result = method === 'copy'
-    ? await exportCopy(ctx)
-    : await run(ctx, [...plan.buildReencodeArgs(clips, mode), ...progress, outputPath], (t) => onProgress(t / totalLength(clips)));
-  return { ...result, method };
+  const info = plan.planExport(ctx.clips); // { method, why }
+  const result = info.method === 'copy' ? await exportCopy(ctx, info) : await exportReencode(ctx, info);
+  return { ...result, ...info };
 }
 
-module.exports = {
-  exportProject,
-  planExport: plan.planExport,
-  buildReencodeArgs: (clips, mode, outputPath) => [...plan.buildReencodeArgs(clips, mode), ...progress, outputPath],
-  outputLength: plan.outputLength,
-  totalLength,
-  isPlain: plan.isPlain,
-};
+module.exports = { exportProject };

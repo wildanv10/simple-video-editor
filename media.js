@@ -36,6 +36,7 @@
 
     const fps = Number(/([\d.]+) fps/.exec(videoLine)?.[1] ?? /([\d.]+) tbr/.exec(videoLine)?.[1]) || 30;
     const vcodec = /Video: (\w+)/.exec(videoLine)?.[1] || '';
+    const profile = /Video: \w+ \(([^)]+)\)/.exec(videoLine)?.[1] || ''; // e.g. High, Main
     const pixFmt = /Video: [^,]+, ([a-z0-9]+)/.exec(videoLine)?.[1] || '';
 
     let audioSig = 'none';
@@ -46,8 +47,11 @@
       audioSig = [acodec, rate, layout].join(':');
     }
 
-    // Clips can be joined without re-encoding only if every stream parameter matches.
-    const sig = [vcodec, width, height, fps, pixFmt, audioSig].join('|');
+    // Clips can be joined without re-encoding only if their streams are compatible. The
+    // frame rate is rounded (29.97 and 30 join fine); the profile is part of it because
+    // an MP4 keeps a single set of decoder parameters, so a different profile would
+    // break the second clip.
+    const sig = [vcodec, profile, width, height, Math.round(fps), pixFmt, audioSig].join('|');
     return { ...info, width, height, fps, sig };
   }
 
