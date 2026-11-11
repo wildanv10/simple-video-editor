@@ -1,26 +1,34 @@
 # Video Trimmer
 
-Aplikasi desktop (Electron) sederhana untuk memotong video: preview, slider, dan simpan.
+A simple desktop app (Electron) for trimming videos: preview, slider, and save.
 
-## Menjalankan
+## Run
 
 ```
 npm install
 npm start
 ```
 
-ffmpeg sudah ikut terpasang lewat `ffmpeg-static`, tidak perlu install terpisah.
+ffmpeg is bundled through `ffmpeg-static`, so no separate install is needed.
 
-## Cara pakai
+## Build the installer (Windows)
 
-1. **Buka Video…** atau seret file video ke jendela.
-2. Geser pegangan biru di slider (atau putar video lalu tekan **I** / **O**) untuk titik mulai/akhir. Waktu juga bisa diketik.
-3. **Simpan Potongan**, pilih lokasi file.
+```
+npm run dist
+```
 
-File yang kontainernya tidak bisa diputar Chromium (mis. MPEG-TS hasil download HLS/.m3u8 yang berekstensi `.mp4`, atau AVI/FLV) otomatis di-remux ke MP4 sementara untuk preview, lalu potongannya disimpan sebagai MP4 normal. Proses ini hanya mengganti pembungkus, tanpa encode ulang.
+The installer is written to the `release` folder.
 
-Ekspor tanpa re-encode (`-c copy`): hampir instan dan tanpa penurunan kualitas, tapi potongan jatuh ke keyframe terdekat sehingga awalnya bisa bergeser sedikit.
+## Usage
 
-Pintasan: `Spasi` putar/jeda, `I` set mulai, `O` set akhir, `←/→` atau `J`/`L` mundur/maju 10 dtk (`Shift` + `←/→` = 1 frame).
+1. Click **Open Video** or drag a video file into the window.
+2. Drag the slider handles (or play the video and press **I** / **O**) to set the start and end points. You can also type the times.
+3. Click **Save Clip** and choose where to save the file.
 
-Catatan: preview memakai pemutar Chromium, jadi codec seperti HEVC/H.265 mungkin tidak bisa di-preview.
+Files whose container Chromium cannot play (for example MPEG-TS from an HLS/.m3u8 download renamed to `.mp4`, or AVI/FLV) are automatically remuxed to a temporary MP4 for preview, and the trimmed clip is saved as a regular MP4. This only changes the wrapper; nothing is re-encoded.
+
+Export does not re-encode (`-c copy`): it is almost instant and lossless, but cuts snap to the nearest keyframe, so the start of the clip can shift slightly.
+
+Shortcuts: `Space` play/pause, `I` set start, `O` set end, `←/→` or `J`/`L` back/forward 10 s (`Shift` + `←/→` = 1 frame).
+
+Note: preview uses the Chromium player, so codecs such as HEVC/H.265 may not be previewable.
