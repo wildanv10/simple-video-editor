@@ -20,6 +20,7 @@
     "start": "electron .",
     "start:web": "npm run build:web && node scripts/serve.js dist-web 5180",
     "build:web": "node scripts/build-web.js",
+    "deploy:web": "npm run build:web && npx --yes wrangler@4 pages deploy dist-web --project-name simple-video-editor --commit-dirty=true",
     "build:desktop": "electron-builder --win nsis --x64",
     "build:icons": "node scripts/build-sprite.js",
     "check": "node scripts/check.js",
