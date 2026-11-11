@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' file:; img-src 'self' data:; style-src 'self'; script-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' file: blob:; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; worker-src 'self' blob:; connect-src 'self' blob:">
   <title>Video Trimmer</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -155,6 +155,9 @@
     <button id="toast-close" class="icon-btn" title="Dismiss" aria-label="Dismiss" hidden><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
 
+  <script src="media.js"></script>
+  <script src="export-plan.js"></script>
+  <script src="web-api.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

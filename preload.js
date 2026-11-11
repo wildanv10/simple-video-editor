@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  canReveal: true,
   pickFiles: () => ipcRenderer.invoke('pick-files'),
   pathForFile: (file) => webUtils.getPathForFile(file),
   prepare: (file) => ipcRenderer.invoke('prepare', file),

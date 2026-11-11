@@ -868,7 +868,8 @@ async function importPaths(paths) {
     showToast(`Importing ${i + 1} of ${paths.length}…`);
     const info = await window.api.prepare(file);
     if (info.error) {
-      errors.push(`${file.split(/[\\/]/).pop()}: ${info.error}`);
+      // On the desktop a file is a path; in the browser it is a File object.
+      errors.push(`${(typeof file === 'string' ? file.split(/[\\/]/).pop() : file.name)}: ${info.error}`);
       continue;
     }
     state.media.set(info.id, info);
@@ -1027,7 +1028,14 @@ $('toast-reveal').addEventListener('click', () => revealPath && window.api.revea
 
 window.api.onProgress((fraction) => {
   if (!state.busy) return;
-  showToast(`Exporting… ${Math.round(fraction * 100)}%`, { progress: fraction, cancel: true });
+  const shown = Math.min(1, Math.max(0, fraction));
+  showToast(`Exporting… ${Math.round(shown * 100)}%`, { progress: shown, cancel: true });
+});
+
+// The web backend reports slow one-off steps, such as loading the video engine.
+window.api.onStatus?.((message) => {
+  if (state.busy) showToast(message, { progress: 0, cancel: true });
+  else if (importing) showToast(message);
 });
 
 function setBusy(on) {
@@ -1060,7 +1068,8 @@ async function exportProject(mode) {
   setBusy(false);
   if (result.ok) {
     const how = result.method === 'copy' ? 'lossless, no re-encode' : 're-encoded';
-    showToast(`Exported (${how}):\n${result.output}`, { kind: 'ok', reveal: result.output, close: true });
+    // A browser cannot open the folder a download went to, so "Show in folder" is desktop only.
+    showToast(`Exported (${how}):\n${result.output}`, { kind: 'ok', reveal: window.api.canReveal ? result.output : null, close: true });
   } else if (result.canceled) {
     showToast('Export canceled.', { close: true, autoHide: 3000 });
   } else {
