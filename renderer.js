@@ -1026,10 +1026,14 @@ $('toast-close').addEventListener('click', hideToast);
 $('toast-cancel').addEventListener('click', () => window.api.cancel());
 $('toast-reveal').addEventListener('click', () => revealPath && window.api.reveal(revealPath));
 
-window.api.onProgress((fraction) => {
+// `info` says how the export is done: { method: 'copy' } is instant and lossless, while
+// { method: 'reencode', why } is slow, and `why` names what forced it.
+const describe = (info) => (info?.method === 'reencode' ? `re-encoding, because ${info.why}` : 'joining without re-encoding');
+
+window.api.onProgress((fraction, info) => {
   if (!state.busy) return;
   const shown = Math.min(1, Math.max(0, fraction));
-  showToast(`Exporting… ${Math.round(shown * 100)}%`, { progress: shown, cancel: true });
+  showToast(`Exporting (${describe(info)})… ${Math.round(shown * 100)}%`, { progress: shown, cancel: true });
 });
 
 // The web backend reports slow one-off steps, such as loading the video engine.
@@ -1044,14 +1048,13 @@ function setBusy(on) {
   updateButtons();
 }
 
-async function exportProject(mode) {
+async function exportProject() {
   if (!state.clips.length || state.busy || importing) return;
   pause();
   setBusy(true);
   showToast('Choose where to save the video…', { progress: 0, cancel: true });
 
   const result = await window.api.exportVideo({
-    mode,
     clips: state.clips.map((c) => ({
       mediaId: c.mediaId,
       layer: state.tracks.indexOf(c.track),
@@ -1067,7 +1070,7 @@ async function exportProject(mode) {
 
   setBusy(false);
   if (result.ok) {
-    const how = result.method === 'copy' ? 'lossless, no re-encode' : 're-encoded';
+    const how = result.method === 'copy' ? 'lossless, no re-encode' : `re-encoded, because ${result.why}`;
     // A browser cannot open the folder a download went to, so "Show in folder" is desktop only.
     showToast(`Exported (${how}):\n${result.output}`, { kind: 'ok', reveal: window.api.canReveal ? result.output : null, close: true });
   } else if (result.canceled) {
@@ -1077,25 +1080,8 @@ async function exportProject(mode) {
   }
 }
 
-const exportMenu = $('export-menu');
-
-function toggleExportMenu(open = exportMenu.hidden) {
-  exportMenu.hidden = !open;
-  $('export').setAttribute('aria-expanded', String(open));
-}
-
-$('export').addEventListener('click', (e) => {
-  e.stopPropagation();
-  toggleExportMenu();
-});
-exportMenu.addEventListener('click', (e) => {
-  const item = e.target.closest('[data-mode]');
-  if (!item) return;
-  toggleExportMenu(false);
-  exportProject(item.dataset.mode);
-});
+$('export').addEventListener('click', () => exportProject());
 document.addEventListener('click', (e) => {
-  if (!exportMenu.hidden && !e.target.closest('.menu-wrap')) toggleExportMenu(false);
   e.target.closest('button')?.blur(); // keep Space/Enter shortcuts working after a click
 });
 
@@ -1136,7 +1122,6 @@ window.addEventListener('keydown', (e) => {
     case 'Home': seekTo(0); break;
     case 'End': seekTo(layout().total); break;
     case 'Delete': case 'Backspace': deleteSelected(!e.shiftKey); break;
-    case 'Escape': toggleExportMenu(false); break;
     default:
       if (key === 'j') skip(-10);
       else if (key === 'l') skip(10);
