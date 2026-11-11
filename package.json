@@ -1,7 +1,7 @@
 {
   "name": "video-trimmer",
   "version": "1.0.0",
-  "description": "A simple video trimmer: preview, slider, and export the trimmed clip.",
+  "description": "A simple video editor for trimming and joining clips, with a Clipchamp-style timeline.",
   "author": "wildanv10",
   "main": "main.js",
   "scripts": {
@@ -26,6 +26,8 @@
     "files": [
       "main.js",
       "preload.js",
+      "media.js",
+      "exporter.js",
       "index.html",
       "renderer.js",
       "styles.css"
