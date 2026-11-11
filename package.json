@@ -1,0 +1,46 @@
+{
+  "name": "video-trimmer",
+  "version": "1.0.0",
+  "description": "Video trimmer sederhana: preview, slider, dan ekspor potongan.",
+  "author": "wildanv10",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.wildanv10.videotrimmer",
+    "productName": "Video Trimmer",
+    "directories": {
+      "output": "release"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "electronVersion": "33.4.11",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "renderer.js",
+      "styles.css"
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/ffmpeg.exe"
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Video-Trimmer-Setup-${version}.exe"
+    }
+  }
+}
